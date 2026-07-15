@@ -1,0 +1,103 @@
+![epic-logo-big-text-epic](https://user-images.githubusercontent.com/68653689/209132553-9c449c25-dbbf-4259-8456-87836f16b1c2.png)
+
+[![Documentation Wiki](https://img.shields.io/badge/doc-wiki-blue.svg)](https://github.com/EpicCash/documentation/wiki)
+[![Release Version](https://img.shields.io/github/release/EpicCash/epic.svg)](https://github.com/EpicCash/epic/releases/)
+[![License](https://img.shields.io/github/license/EpicCash/epic.svg)](https://github.com/EpicCash/epic/blob/master/LICENSE)
+[![Epic Master Branch Build Status](https://github.com/EpicCash/epic/actions/workflows/epic-master-branch.yml/badge.svg)](https://github.com/EpicCash/epic/actions/workflows/epic-master-branch.yml)
+
+This is the implementation of the epic server. The epic server is a node in the network that validates, propagates, and sometimes produces new blocks, basically a collection of processed transactions.
+
+# Introduction to MimbleWimble and Epic
+
+MimbleWimble is a blockchain format and protocol that provides extremely good scalability, privacy and fungibility by relying on strong cryptographic primitives. It addresses gaps existing in almost all current blockchain implementations.
+
+Epic is an open source software project that implements a MimbleWimble blockchain and fills the gaps required for a full blockchain and cryptocurrency deployment.
+
+The main goal and characteristics of the Epic project are:
+
+* Privacy by default. This enables complete fungibility without precluding
+  the ability to selectively disclose information as needed.
+* Scales mostly with the number of users and minimally with the number of
+  transactions (<100 byte `kernel`), resulting in a large space saving compared
+  to other blockchains.
+* Strong and proven cryptography. MimbleWimble only relies on Elliptic Curve
+  Cryptography which has been tried and tested for decades.
+* Design simplicity that makes it easy to audit and maintain over time.
+* Community driven, encouraging mining decentralization.
+
+## Status
+
+Epic is live with mainnet.
+
+# Getting Started
+
+You can run Epic Cash either by **building from source** or using our **Docker image**.
+
+- If you want to get started quickly, use the [Docker instructions](#running-with-docker) below.
+- If you prefer to build and run Epic Cash yourself, follow the [detailed guides in our Wiki](https://github.com/EpicCash/documentation/wiki).
+
+> **Note:** The documentation is comprehensive—feel free to read as much or as little as you need. Choose the method that best fits your experience and needs!
+
+## Quick Start Options
+
+- [Running the server](https://github.com/EpicCash/documentation/wiki/Running-the-server)
+- [Running the wallet](https://github.com/EpicCash/documentation/wiki/Running-the-wallet)
+- [Mining](https://github.com/EpicCash/documentation/wiki/Mining)
+
+## Quick User guides :books: 
+
+Has more information about the project, such as how to do transactions, and details about mining.
+
+Here are the basic topics:
+- [Epic wallet](https://github.com/EpicCash/documentation/wiki/Epic-wallet)
+- [Epic miner](https://github.com/EpicCash/documentation/wiki/Epic-miner)
+
+## Building the projects :toolbox:
+
+If you want to build the projects, you should be able to have the minimum requirements for building the projects directly from their repositories.
+
+This section is divided by OS:
+
+- [Linux](https://github.com/EpicCash/documentation/wiki/Linux)
+- [Windows](https://github.com/EpicCash/documentation/wiki/Windows)
+- [macOS](https://github.com/EpicCash/documentation/wiki/macOS)
+
+# Running with Docker
+
+You can run an Epic node using Docker:
+
+```sh
+docker build -t epic-mainnet -f etc/Dockerfile .
+docker run -d --name epic-mainnet -p 3413:3413 -p 3414:3414 -p 3415:3415 -p 3416:3416 epic-mainnet
+```
+
+Or with Docker Compose:
+```sh
+docker compose up -d
+```
+
+# Contributing :bricks: 
+
+If you want to help us and contribute with our code:
+- [Contributing](https://github.com/EpicCash/documentation/wiki/Contributing)
+
+# Credits
+
+Tom Elvis Jedusor for the first formulation of MimbleWimble.
+
+Andrew Poelstra for his related work and improvements.
+
+John Tromp for the Cuckoo Cycle proof of work.
+
+Grin Developers for the initial implementation
+
+J.K. Rowling for making it despite extraordinary adversity.
+
+# License
+
+Apache License v2.0.
+
+## Third-party Software
+
+This project bundles the [Tor expert bundle](https://www.torproject.org/), which is licensed under the 3-clause BSD license.  
+See [LICENSE.tor](./LICENSE.tor) for details.

@@ -991,6 +991,70 @@ fn ensure(req: &EpicRequest) -> Result<String, String> {
     })))
 }
 
+fn estimate_max_send_values(
+    wallet: &EpicWallet,
+    mask: Option<&EpicSecretKey>,
+    spendable: u64,
+    initial_fee: u64,
+) -> Result<(u64, u64), String> {
+    let mut fee = initial_fee;
+    for _ in 0..8 {
+        if spendable <= fee {
+            return Err(format!(
+                "Epic transaction create: Not enough funds. Required: {}, Available: {}",
+                amount_to_hr_string(fee, true),
+                amount_to_hr_string(spendable, true)
+            ));
+        }
+        let candidate = spendable - fee;
+        match estimate_send_tx_direct(wallet, mask, candidate) {
+            Ok((_estimated_total, estimated_fee)) if estimated_fee == fee => {
+                return Ok((candidate, estimated_fee));
+            }
+            Ok((_estimated_total, estimated_fee)) => {
+                fee = estimated_fee;
+            }
+            Err(EpicWalletError::NotEnoughFunds { available, needed, .. }) if needed > available => {
+                // The candidate used the previous fee. Fold the wallet's exact
+                // atomic deficit into the next candidate when the selected
+                // input/output shape makes MAX one fee step more expensive.
+                let deficit = needed - available;
+                fee = fee
+                    .checked_add(deficit)
+                    .ok_or_else(|| "Epic max fee overflow".to_string())?;
+            }
+            Err(error) => return Err(format!("Epic max fee estimate: {error}")),
+        }
+    }
+    Err("Epic max fee estimate did not converge".to_string())
+}
+
+fn estimate_max_send(req: &EpicRequest) -> Result<String, String> {
+    let (owner, mask, wallet, _scope) = open_wallet(req)?;
+    let mask_ref = mask.as_ref();
+    let (_updated_from_node, info) = owner
+        .retrieve_summary_info(mask_ref, true, 1)
+        .map_err(|e| format!("Epic balance refresh: {e}"))?;
+    let spendable = output_totals(&owner, mask_ref, info.last_confirmed_height)
+        .map(|(_total, spendable)| spendable)
+        .unwrap_or(info.amount_currently_spendable);
+    let (amount, fee) = estimate_max_send_values(
+        &wallet,
+        mask_ref,
+        spendable,
+        requested_or_default_fee(req)?,
+    )?;
+    Ok(ok(json!({
+        "code": "epic-native-max-estimate",
+        "address": address_for(&owner, mask_ref)?,
+        "amount": amount_to_hr_string(amount, true),
+        "fee": amount_to_hr_string(fee, true),
+        "balance": amount_to_hr_string(spendable, true),
+        "spendable": amount_to_hr_string(spendable, true),
+        "transactions": [],
+    })))
+}
+
 fn prepare_send(req: &EpicRequest) -> Result<PreparedEpicSend, String> {
     let (owner, mask, wallet, _scope) = open_wallet(req)?;
     let mask_ref = mask.as_ref();
@@ -1014,26 +1078,12 @@ fn prepare_send(req: &EpicRequest) -> Result<PreparedEpicSend, String> {
         let spendable = output_totals(&owner, mask_ref, info.last_confirmed_height)
             .map(|(_total, spendable)| spendable)
             .unwrap_or(info.amount_currently_spendable);
-        let mut fee = requested_or_default_fee(req)?;
-        for _ in 0..6 {
-            if spendable <= fee {
-                return Err(format!(
-                    "Epic transaction create: Not enough funds. Required: {}, Available: {}",
-                    amount_to_hr_string(fee, true),
-                    amount_to_hr_string(spendable, true)
-                ));
-            }
-            let candidate = spendable - fee;
-            let (_estimated_total, estimated_fee) =
-                estimate_send_tx_direct(&wallet, mask_ref, candidate)
-                .map_err(|e| format!("Epic max fee estimate: {e}"))?;
-            if estimated_fee == fee {
-                amount = candidate;
-                break;
-            }
-            fee = estimated_fee;
-            amount = spendable.saturating_sub(fee);
-        }
+        (amount, _) = estimate_max_send_values(
+            &wallet,
+            mask_ref,
+            spendable,
+            requested_or_default_fee(req)?,
+        )?;
         if amount == 0 {
             return Err("Epic transaction create: Not enough funds after fee".to_string());
         }
@@ -1267,6 +1317,8 @@ fn handle(input: &str) -> String {
         "ensure" => ensure(&req).unwrap_or_else(|e| err("epic-native-wallet-error", e)),
         #[cfg(feature = "snapshot")]
         "snapshot" => snapshot(&req).unwrap_or_else(|e| err("epic-native-wallet-error", e)),
+        #[cfg(feature = "send-prepare")]
+        "estimatemax" => estimate_max_send(&req).unwrap_or_else(|e| err("epic-native-wallet-error", e)),
         #[cfg(feature = "send")]
         "send" => send(&req).unwrap_or_else(|e| err("epic-native-wallet-error", e)),
         #[cfg(feature = "transport-client")]

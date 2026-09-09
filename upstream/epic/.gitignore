@@ -6,7 +6,7 @@ debug/
 !node_clients
 !node_clients.rs
 target
-*/Cargo.lock
+*!/Cargo.lock
 *.iml
 epic.log
 wallet.seed
@@ -20,7 +20,7 @@ release/
 # Standard Rust exclusions
 /target/
 /**/target/
-/Cargo.lock
+!/Cargo.lock
 **/*.rs.bk
 
 # Standard Visual Studio Code exclusions
